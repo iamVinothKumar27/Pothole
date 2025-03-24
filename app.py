@@ -125,19 +125,19 @@ def process_video(video_path):
         if frame_index % interval == 0:
             processed_frame = preprocess_frame(frame)  # Apply enhancements
             temp_img = Image.fromarray(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB))
-            temp_path = f"static/frame_{uuid.uuid4().hex}.jpg"
+            filename_only = f"frame_{uuid.uuid4().hex}.jpg"
+            temp_path = os.path.join("static", filename_only)
             pothole_result, conf, crack_filename, crack_status = process_image(temp_img, save_path=temp_path)
-
             # Record the results with the timestamp
             sec = round(frame_index / fps) if fps > 0 else frame_index
             results.append({
                 "time": f"{sec}s",
-                "path": temp_path,
+                "path": filename_only,  # only filename passed to template
                 "pothole": pothole_result,
-                "confidence": conf,
-                "crack": crack_status,
-                "crack_file": crack_filename
+                "confidence": conf
             })
+
+
 
         frame_index += 1
 

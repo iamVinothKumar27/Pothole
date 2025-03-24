@@ -95,44 +95,50 @@
     {% if filename or crack_filename or result.pothole %}
     <div class="output-section">
         <h3>🖼️ Image Analysis Output</h3>
-
-        {% if result.pothole %}
-            <div class="result">
+        <div class="grid-container">
+            {% if result.pothole %}
+            <div class="grid-item">
                 <h4>Pothole Detection Result</h4>
                 <p><strong>{{ result.pothole }}</strong></p>
                 <p>Confidence: {{ result.confidence | round(2) }}</p>
             </div>
-        {% endif %}
+            {% endif %}  <!-- Ensure this endif corresponds to the if result.pothole -->
 
-        <div class="grid-container">
             {% if filename %}
-                <div class="grid-item">
-                    <h4>Original Image</h4>
-                    <img src="{{ url_for('static', filename=filename) }}">
-                </div>
-            {% endif %}
+            <div class="grid-item">
+                <h4>Original Image</h4>
+                <img src="{{ url_for('static', filename=filename) }}">
+            </div>
+            {% endif %}  <!-- Ensure this endif corresponds to the if filename -->
 
             {% if crack_filename %}
-                <div class="grid-item">
-                    <h4>Crack Detection Output</h4>
-                    <img src="{{ url_for('static', filename=crack_filename) }}">
-
-                    <p><strong>{{ crack_status }}</strong></p>
-                </div>
-            {% endif %}
+            <div class="grid-item">
+                <h4>Crack Detection Output</h4>
+                <img src="{{ url_for('static', filename=crack_filename) }}">
+                <p><strong>{{ crack_status }}</strong></p>
+            </div>
+            {% endif %}  <!-- Ensure this endif corresponds to the if crack_filename -->
         </div>
     </div>
-    {% endif %}
+    {% endif %}  <!-- Ensure this endif corresponds to the if filename or crack_filename or result.pothole -->
 
     <!-- Video Output -->
     {% if video_result %}
     <div class="output-section">
         <h3>🎞️ Video Analysis Output</h3>
-        <div class="result">
-            <h4>Pothole Detection (Video)</h4>
-            <p><strong>{{ video_result }}</strong></p>
+        <div class="grid-container">
+            {% for frame in video_result %}
+            <div class="grid-item">
+                <h4>Frame: {{ frame.time }}</h4>
+                <img src="{{ url_for('static', filename=frame.path) }}">
+                <p><strong>{{ frame.pothole }}</strong></p>
+                <p>Confidence: {{ frame.confidence | round(2) }}</p>
+            </div>
+            {% endfor %}
         </div>
     </div>
     {% endif %}
+
+
 </body>
 </html>
