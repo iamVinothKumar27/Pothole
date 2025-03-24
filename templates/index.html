@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pothole & Crack Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>🚧 Road Defect Detection</h1>
+    <form method="POST" enctype="multipart/form-data">
+      <input type="file" name="file" accept="image/*" required>
+      <button type="submit">Predict</button>
+    </form>
+
+    {% if filename %}
+      <h2>Uploaded Image:</h2>
+      <img src="{{ url_for('static', filename=filename) }}" alt="Uploaded Image" class="preview">
+    {% endif %}
+
+    {% if result %}
+      <h2>🧠 Pothole Detection:</h2>
+      {% if result.pothole == "Pothole Detected" %}
+        <div class="alert danger">🚨 <strong>{{ result.pothole }}</strong> (Confidence: {{ result.confidence | round(2) }})</div>
+      {% else %}
+        <div class="alert success">✅ <strong>{{ result.pothole }}</strong> (Confidence: {{ (1 - result.confidence) | round(2) }})</div>
+      {% endif %}
+    {% endif %}
+  </div>
+</body>
+</html>
