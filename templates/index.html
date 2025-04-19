@@ -5,33 +5,49 @@
     <link rel="icon" href="{{ url_for('static', filename='logo1.webp') }}">
     <title>Pothole & Crack Detection</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
         body {
-            background-color: #000;
-            color: #00ff00;
-            font-family: 'Courier New', Courier, monospace;
+            background-color: #f9f9f9;
+            color: #333;
+            font-family: 'Inter', sans-serif;
             text-align: center;
             padding: 20px;
         }
 
-        h2, h3 {
-            color: #00ff00;
+        h2 {
+            color: #0077cc;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        h2::after {
+            content: '';
+            display: block;
+            width: 160px;
+            margin: 10px auto 0;
+            height: 3px;
+            background: linear-gradient(to right, transparent, #0077cc, transparent);
+        }
+
+        h3 {
+            color: #333;
+            font-size: 22px;
+            margin-bottom: 15px;
         }
 
         .form-section, .output-section {
-            border: 1px solid #00ff00;
-            padding: 20px;
+            background-color: #ffffff;
+            padding: 25px;
             margin: 30px auto;
-            width: 80%;
-            background-color: #111;
+            width: 85%;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease-in-out;
         }
 
-        .result {
-            font-size: 18px;
-            border: 2px solid #00ff00;
-            padding: 15px;
-            max-width: 500px;
-            margin: 20px auto;
-            background-color: #111;
+        .form-section:hover, .output-section:hover {
+            transform: scale(1.01);
         }
 
         .grid-container {
@@ -43,29 +59,50 @@
         }
 
         .grid-item {
-            border: 1px solid #00ff00;
-            padding: 10px;
-            background-color: #111;
+            border: 1px solid #ddd;
+            padding: 15px;
+            background-color: #fafafa;
+            border-radius: 10px;
+            width: 300px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         img {
-            width: 300px;
+            width: 100%;
             height: auto;
-            border: 2px solid #00ff00;
+            border-radius: 8px;
+            border: 1px solid #ccc;
         }
 
         input[type="file"], button {
-            background-color: #00ff00;
-            color: #000;
-            padding: 10px 15px;
+            background: linear-gradient(45deg, #0077cc, #3399ff);
+            color: #fff;
+            padding: 12px 20px;
             border: none;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
-            margin: 10px;
+            margin: 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease-in-out;
         }
 
-        input:hover, button:hover {
-            background-color: #00cc00;
+        input[type="file"]:hover, button:hover {
+            background: linear-gradient(45deg, #005fa3, #2389d7);
+            transform: scale(1.05);
+        }
+
+        h4 {
+            color: #0077cc;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #555;
+        }
+
+        ::selection {
+            background: #0077cc;
+            color: #fff;
         }
     </style>
 </head>
@@ -103,14 +140,14 @@
                 <p><strong>{{ result.pothole }}</strong></p>
                 <p>Confidence: {{ result.confidence | round(2) }}</p>
             </div>
-            {% endif %}  <!-- Ensure this endif corresponds to the if result.pothole -->
+            {% endif %}
 
             {% if filename %}
             <div class="grid-item">
                 <h4>Original Image</h4>
                 <img src="{{ url_for('static', filename=filename) }}">
             </div>
-            {% endif %}  <!-- Ensure this endif corresponds to the if filename -->
+            {% endif %}
 
             {% if crack_filename %}
             <div class="grid-item">
@@ -118,10 +155,10 @@
                 <img src="{{ url_for('static', filename=crack_filename) }}">
                 <p><strong>{{ crack_status }}</strong></p>
             </div>
-            {% endif %}  <!-- Ensure this endif corresponds to the if crack_filename -->
+            {% endif %}
         </div>
     </div>
-    {% endif %}  <!-- Ensure this endif corresponds to the if filename or crack_filename or result.pothole -->
+    {% endif %}
 
     <!-- Video Output -->
     {% if video_result %}
@@ -139,7 +176,5 @@
         </div>
     </div>
     {% endif %}
-
-
 </body>
 </html>
