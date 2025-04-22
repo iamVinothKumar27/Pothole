@@ -138,7 +138,6 @@
             <div class="grid-item">
                 <h4>Pothole Detection Result</h4>
                 <p><strong>{{ result.pothole }}</strong></p>
-                <p>Confidence: {{ result.confidence | round(2) }}</p>
             </div>
             {% endif %}
 
@@ -170,7 +169,6 @@
                 <h4>Frame: {{ frame.time }}</h4>
                 <img src="{{ url_for('static', filename=frame.path) }}">
                 <p><strong>{{ frame.pothole }}</strong></p>
-                <p>Confidence: {{ frame.confidence | round(2) }}</p>
             </div>
             {% endfor %}
         </div>
