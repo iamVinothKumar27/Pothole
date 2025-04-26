@@ -9,6 +9,7 @@ import uuid
 import json
 import requests
 import datetime
+import pytz
 from collections import Counter
 
 app = Flask(__name__)
@@ -170,9 +171,13 @@ def save_report(image, location, crack_length=0.0, pothole_diameter=0.0):
         defect_type = "pothole"
 
     reports = load_reports()
+
+    india_timezone = pytz.timezone("Asia/Kolkata")
+    current_time = datetime.datetime.now(india_timezone).strftime("%Y-%m-%d %H:%M:%S")
+
     reports.append({
         "id": len(reports) + 1,
-        "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "time": current_time,
         "image": image,
         "location": address,
         "status": "pending",
