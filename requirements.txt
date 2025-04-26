@@ -6,3 +6,4 @@ flask
 gunicorn
 Pillow
 opencv-python
+pytz
