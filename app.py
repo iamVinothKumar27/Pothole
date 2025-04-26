@@ -304,6 +304,32 @@ def report():
     pothole_diameter = float(request.form.get("pothole_diameter", "0.0"))
     save_report(image, location, crack_length, pothole_diameter)
     return "Reported Successfully"
+@app.route("/update_status", methods=["POST"])
+def update_status():
+    report_id = int(request.form.get("id"))
+    action = request.form.get("action")
+    reports = load_reports()
+    for report in reports:
+        if report["id"] == report_id:
+            if action == "close":
+                report["status"] = "in_progress"
+            elif action == "complete":
+                report["status"] = "complete"
+            break
+    with open(REPORTS_FILE, "w") as f:
+        json.dump(reports, f)
+    return render_template("admin.html", reports=reports)
+
+@app.route("/delete_report", methods=["POST"])
+def delete_report():
+    report_id = int(request.form.get("id"))
+    reports = load_reports()
+    reports = [r for r in reports if r["id"] != report_id]
+    for idx, r in enumerate(reports):
+        r["id"] = idx + 1
+    with open(REPORTS_FILE, "w") as f:
+        json.dump(reports, f)
+    return render_template("admin.html", reports=reports)
 
 @app.route("/severe")
 def severe():
