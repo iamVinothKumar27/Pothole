@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Reports</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; padding: 20px; background-color: #f9f9f9; }
+        table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #0077cc; color: white; }
+        tr:hover { background-color: #f1f1f1; }
+        img { width: 150px; height: auto; border-radius: 8px; }
+        .status { font-weight: bold; padding: 6px 10px; border-radius: 5px; color: white; }
+        .pending { background-color: red; }
+        .in_progress { background-color: orange; }
+        .complete { background-color: green; }
+        button {
+            background: linear-gradient(45deg, #0077cc, #3399ff);
+            color: white; border: none;
+            padding: 6px 10px; border-radius: 6px;
+            cursor: pointer; margin-right: 5px;
+        }
+        button:hover { background: linear-gradient(45deg, #005fa3, #2389d7); }
+        .delete-icon-btn {
+            background: none; border: none;
+            font-size: 18px; cursor: pointer;
+            color: #333;
+        }
+        .delete-icon-btn:hover { color: red; }
+        a { text-decoration: none; color: #0077cc; font-weight: bold; }
+        a:hover { text-decoration: underline; }
+    </style>
+    <script>
+    function confirmDelete() {
+        return confirm("Are you sure you want to delete this completed report?");
+    }
+    </script>
+</head>
+<body>
+    <h2 style="text-align:center; color:#0077cc;">📋 Reported Road Issues</h2>
+
+    <div style="text-align:center; margin-top:20px;">
+        <a href="/severe"><button>🚨 View Severe Locations</button></a>
+    </div>
+
+    <table>
+        <tr>
+            <th>Report ID</th>
+            <th>Image</th>
+            <th>Location</th>
+            <th>Crack Length (m)</th>
+            <th>Pothole Diameter (m)</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for report in reports %}
+        <tr>
+            <td>{{ report.id }}</td>
+            <td><img src="{{ url_for('static', filename=report.image) }}"></td>
+            <td>{{ report.location }}</td>
+            <td>{{ "%.3f"|format(report.crack_length) if report.crack_length else "-" }}</td>
+            <td>{{ "%.3f"|format(report.pothole_diameter) if report.pothole_diameter else "-" }}</td>
+            <td>
+                <span class="status {{ report.status }}">
+                    {{ report.status.replace("_", " ").capitalize() }}
+                </span>
+            </td>
+            <td>
+                {% if report.status == "complete" %}
+                    ✅
+                    <form action="/delete_report" method="POST" style="display:inline;">
+                        <input type="hidden" name="id" value="{{ report.id }}">
+                        <button type="submit" class="delete-icon-btn" onclick="return confirmDelete()" title="Delete">&#128465;</button>
+                    </form>
+                {% else %}
+                <form action="/update_status" method="POST" style="display:inline;">
+                    <input type="hidden" name="id" value="{{ report.id }}">
+                    {% if report.status == "pending" %}
+                        <button type="submit" name="action" value="close">
+                            {% if report.type == "pothole" %}Close Pothole{% elif report.type == "crack" %}Fill Crack{% else %}Start Task{% endif %}
+                        </button>
+                    {% elif report.status == "in_progress" %}
+                        <button type="submit" name="action" value="complete">Complete</button>
+                    {% endif %}
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

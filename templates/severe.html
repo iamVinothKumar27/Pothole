@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Severe Locations</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body { background-color: #f9f9f9; font-family: 'Inter', sans-serif; color: #333; text-align: center; padding: 20px; }
+        h2 { color: #0077cc; font-size: 32px; margin-bottom: 10px; }
+        h2::after { content: ''; display: block; width: 160px; margin: 10px auto 0; height: 3px; background: linear-gradient(to right, transparent, #0077cc, transparent); }
+        .card { background-color: #fff; padding: 20px; margin: 20px auto; width: 90%; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+        ul { list-style-type: none; padding: 0; }
+        li { font-size: 18px; padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        a { text-decoration: none; color: #0077cc; font-weight: bold; }
+        a:hover { text-decoration: underline; }
+        #map { height: 500px; width: 100%; border-radius: 12px; margin-top: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        button {
+            background: linear-gradient(45deg, #0077cc, #3399ff); 
+            color: #fff; padding: 10px 20px; border: none; 
+            font-weight: 600; border-radius: 8px; cursor: pointer; 
+            margin-top: 20px;
+        }
+        button:hover {
+            background: linear-gradient(45deg, #005fa3, #2389d7);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <h2>⚠️ Severe Locations (More than 5 Reports)</h2>
+
+    {% if severe_locations %}
+    <div class="card">
+        <ul>
+            {% for loc in severe_locations %}
+            <li>📍 {{ loc }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div id="map"></div>
+    {% else %}
+    <div class="card">
+        <p style="font-size: 20px;">No severe locations detected.</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 30px;">
+        <a href="/admin">
+            <button>🔙 Back to Admin Dashboard</button>
+        </a>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+    {% if severe_locations %}
+    var map = L.map('map').setView([20.5937, 78.9629], 5); // Start wide view India
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+        maxZoom: 18,
+    }).addTo(map);
+
+    {% for loc in severe_locations %}
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q={{ loc | urlencode }}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                var latitude = data[0].lat;
+                var longitude = data[0].lon;
+                var marker = L.marker([latitude, longitude]).addTo(map)
+                    .bindPopup(`<b>Severe Location</b><br>{{ loc }}`);
+
+                // Focus zoom into this location
+                map.setView([latitude, longitude], 13);
+            }
+        });
+    {% endfor %}
+    {% endif %}
+    </script>
+</body>
+</html>

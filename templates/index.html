@@ -2,134 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" href="{{ url_for('static', filename='logo1.webp') }}">
     <title>Pothole & Crack Detection</title>
+    <link rel="icon" href="{{ url_for('static', filename='logo1.webp') }}">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-
-        body {
-            background-color: #f9f9f9;
-            color: #333;
-            font-family: 'Inter', sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-
-        h2 {
-            color: #0077cc;
-            font-size: 32px;
-            margin-bottom: 10px;
-        }
-
-        h2::after {
-            content: '';
-            display: block;
-            width: 160px;
-            margin: 10px auto 0;
-            height: 3px;
-            background: linear-gradient(to right, transparent, #0077cc, transparent);
-        }
-
-        h3 {
-            color: #333;
-            font-size: 22px;
-            margin-bottom: 15px;
-        }
-
-        .form-section, .output-section {
-            background-color: #ffffff;
-            padding: 25px;
-            margin: 30px auto;
-            width: 85%;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .form-section:hover, .output-section:hover {
-            transform: scale(1.01);
-        }
-
-        .grid-container {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 30px;
-            margin-top: 20px;
-        }
-
-        .grid-item {
-            border: 1px solid #ddd;
-            padding: 15px;
-            background-color: #fafafa;
-            border-radius: 10px;
-            width: 300px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        img {
-            width: 100%;
-            height: auto;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-
-        input[type="file"], button {
-            background: linear-gradient(45deg, #0077cc, #3399ff);
-            color: #fff;
-            padding: 12px 20px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            margin: 15px;
-            border-radius: 8px;
-            transition: all 0.3s ease-in-out;
-        }
-
-        input[type="file"]:hover, button:hover {
-            background: linear-gradient(45deg, #005fa3, #2389d7);
-            transform: scale(1.05);
-        }
-
-        h4 {
-            color: #0077cc;
-            margin-bottom: 10px;
-        }
-
-        p {
-            color: #555;
-        }
-
-        ::selection {
-            background: #0077cc;
-            color: #fff;
-        }
+        body { background-color: #f9f9f9; color: #333; font-family: 'Inter', sans-serif; text-align: center; padding: 20px; }
+        h2 { color: #0077cc; font-size: 32px; margin-bottom: 10px; }
+        h2::after { content: ''; display: block; width: 160px; margin: 10px auto 0; height: 3px; background: linear-gradient(to right, transparent, #0077cc, transparent); }
+        .form-section, .output-section { background-color: #fff; padding: 25px; margin: 30px auto; width: 85%; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .grid-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 30px; margin-top: 20px; }
+        .grid-item { border: 1px solid #ddd; padding: 15px; background-color: #fafafa; border-radius: 10px; width: 300px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+        img { width: 100%; height: auto; border-radius: 8px; border: 1px solid #ccc; }
+        input[type="file"], button { background: linear-gradient(45deg, #0077cc, #3399ff); color: #fff; padding: 12px 20px; border: none; font-weight: 600; cursor: pointer; margin: 15px; border-radius: 8px; transition: all 0.3s ease-in-out; }
+        input[type="file"]:hover, button:hover { background: linear-gradient(45deg, #005fa3, #2389d7); transform: scale(1.05); }
     </style>
 </head>
 <body>
     <h2>🚧 Road Defect Detection System</h2>
 
-    <!-- IMAGE Upload -->
     <div class="form-section">
         <form method="POST" enctype="multipart/form-data">
             <h3>📷 Image Upload</h3>
-            <input type="file" name="file" accept="image/*" required>
-            <br><br>
+            <input type="file" name="file" accept="image/*" required><br><br>
             <button type="submit" name="submit_type" value="image">Analyze Image</button>
         </form>
     </div>
 
-    <!-- VIDEO Upload -->
     <div class="form-section">
         <form method="POST" enctype="multipart/form-data">
             <h3>🎥 Video Upload</h3>
-            <input type="file" name="video" accept="video/*" required>
-            <br><br>
+            <input type="file" name="video" accept="video/*" required><br><br>
             <button type="submit" name="submit_type" value="video">Analyze Video</button>
         </form>
     </div>
 
-    <!-- Image Output -->
     {% if filename or crack_filename or result.pothole %}
     <div class="output-section">
         <h3>🖼️ Image Analysis Output</h3>
@@ -138,41 +43,82 @@
             <div class="grid-item">
                 <h4>Pothole Detection Result</h4>
                 <p><strong>{{ result.pothole }}</strong></p>
+                <p><strong>Confidence:</strong> {{ "%.2f"|format(result.confidence) }}</strong></p>
+                {% if pothole_diameter and pothole_diameter > 0 %}
+                <p><strong>Estimated Pothole Diameter:</strong> {{ "%.2f"|format(pothole_diameter) }} meters</p>
+                {% endif %}
             </div>
             {% endif %}
-
             {% if filename %}
             <div class="grid-item">
                 <h4>Original Image</h4>
                 <img src="{{ url_for('static', filename=filename) }}">
             </div>
             {% endif %}
-
             {% if crack_filename %}
             <div class="grid-item">
-                <h4>Crack Detection Output</h4>
+                <h4>Binary Crack Detection Output</h4>
                 <img src="{{ url_for('static', filename=crack_filename) }}">
                 <p><strong>{{ crack_status }}</strong></p>
+                <p><strong>Crack Length:</strong> {{ "%.3f"|format(total_crack_length) }} meters</p>
             </div>
             {% endif %}
         </div>
+
+        {% if result.pothole == "Pothole Detected" or crack_status == "Crack Detected" %}
+        <form action="/report" method="POST">
+            <input type="hidden" name="image" value="{{ filename }}">
+            <input type="hidden" name="location" class="location-input">
+            <input type="hidden" name="crack_length" value="{{ total_crack_length }}">
+            <input type="hidden" name="pothole_diameter" value="{{ pothole_diameter }}">
+            <button type="submit">📨 Report Image to Gov</button>
+        </form>
+        {% endif %}
     </div>
     {% endif %}
 
-    <!-- Video Output -->
     {% if video_result %}
     <div class="output-section">
-        <h3>🎞️ Video Analysis Output</h3>
+        <h3>🎥 Video Analysis Output</h3>
         <div class="grid-container">
             {% for frame in video_result %}
             <div class="grid-item">
-                <h4>Frame: {{ frame.time }}</h4>
+                <h4>Time: {{ frame.time }}</h4>
                 <img src="{{ url_for('static', filename=frame.path) }}">
-                <p><strong>{{ frame.pothole }}</strong></p>
+                <p><strong>Pothole:</strong> {{ frame.pothole }}</p>
+                <p><strong>Confidence:</strong> {{ "%.2f"|format(frame.confidence) }}</p>
+                {% if frame.pothole_diameter and frame.pothole_diameter > 0 %}
+                <p><strong>Estimated Diameter:</strong> {{ "%.2f"|format(frame.pothole_diameter) }} meters</p>
+                {% endif %}
+                {% if frame.crack_status %}
+                <p><strong>Crack Status:</strong> {{ frame.crack_status }}</p>
+                {% endif %}
+                {% if frame.crack_length and frame.crack_length > 0 %}
+                <p><strong>Crack Length:</strong> {{ "%.3f"|format(frame.crack_length) }} meters</p>
+                {% endif %}
+
+                {% if frame.pothole == "Pothole Detected" or frame.crack_status == "Crack Detected" %}
+                <form action="/report" method="POST">
+                    <input type="hidden" name="image" value="{{ frame.path }}">
+                    <input type="hidden" name="location" class="location-input">
+                    <input type="hidden" name="crack_length" value="{{ frame.crack_length }}">
+                    <input type="hidden" name="pothole_diameter" value="{{ frame.pothole_diameter }}">
+                    <button type="submit">📨 Report Frame to Gov</button>
+                </form>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
     </div>
     {% endif %}
+
+    <script>
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const latlng = position.coords.latitude + "," + position.coords.longitude;
+            document.querySelectorAll(".location-input").forEach(function(input) {
+                input.value = latlng;
+            });
+        });
+    </script>
 </body>
 </html>
