@@ -7,3 +7,4 @@ gunicorn
 Pillow
 opencv-python
 pytz
+requests
