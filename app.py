@@ -145,18 +145,24 @@ def reverse_geocode(lat, lon):
 # Load reports
 def load_reports():
     if os.path.exists(REPORTS_FILE):
-        with open(REPORTS_FILE, "r") as f:
-            reports = json.load(f)
-        for r in reports:
-            if "status" not in r:
-                r["status"] = "pending"
-            if "type" not in r:
-                r["type"] = "pothole"
-            if "crack_length" not in r:
-                r["crack_length"] = 0.0
-            if "pothole_diameter" not in r:
-                r["pothole_diameter"] = 0.0
-        return reports
+        try:
+            with open(REPORTS_FILE, "r") as f:
+                content = f.read().strip()
+                if not content:
+                    return []
+                reports = json.loads(content)
+            for r in reports:
+                if "status" not in r:
+                    r["status"] = "pending"
+                if "type" not in r:
+                    r["type"] = "pothole"
+                if "crack_length" not in r:
+                    r["crack_length"] = 0.0
+                if "pothole_diameter" not in r:
+                    r["pothole_diameter"] = 0.0
+            return reports
+        except json.JSONDecodeError:
+            return []
     return []
 
 # Save report
