@@ -8,4 +8,3 @@ Pillow
 opencv-python
 pytz
 requests
-session
