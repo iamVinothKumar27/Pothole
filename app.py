@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 import numpy as np
@@ -13,17 +13,15 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'  # Needed for flashing messages
+app.secret_key = 'supersecretkey'
 
 TFLITE_MODEL_PATH = "Pothole.tflite"
 REPORTS_FILE = "reports.json"
 USERS_FILE = "users.json"
 
-# --- Admin Credentials ---
 ADMIN_EMAIL = "admin@gmail.com"
 ADMIN_PASSWORD = "admin123"
 
-# Load TFLite model
 def load_tflite_interpreter():
     if not hasattr(load_tflite_interpreter, "interpreter"):
         interpreter = tf.lite.Interpreter(model_path=TFLITE_MODEL_PATH)
@@ -31,7 +29,6 @@ def load_tflite_interpreter():
         load_tflite_interpreter.interpreter = interpreter
     return load_tflite_interpreter.interpreter
 
-# Run inference
 def run_tflite_inference(img_array):
     interpreter = load_tflite_interpreter()
     input_details = interpreter.get_input_details()
@@ -41,7 +38,6 @@ def run_tflite_inference(img_array):
     output_data = interpreter.get_tensor(output_details[0]['index']).copy()
     return output_data[0][0]
 
-# Crack detection
 def detect_cracks(image_path, pixels_per_meter=1000):
     img = cv2.imread(image_path)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -63,7 +59,6 @@ def detect_cracks(image_path, pixels_per_meter=1000):
     total_crack_length = sum(crack_lengths_meters)
     return total_crack_length, "binary_crack.jpg"
 
-# Pothole diameter detection
 def estimate_pothole_diameter(image_path, pixels_per_meter=1000):
     img = cv2.imread(image_path)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -78,7 +73,6 @@ def estimate_pothole_diameter(image_path, pixels_per_meter=1000):
     diameter_meters = diameter_pixels / pixels_per_meter
     return diameter_meters
 
-# Process a single image
 def process_image(img_pil, save_path="static/uploaded_image.jpg"):
     img_pil = img_pil.resize((224, 224)).convert("RGB")
     x = image.img_to_array(img_pil)
@@ -94,50 +88,7 @@ def process_image(img_pil, save_path="static/uploaded_image.jpg"):
         pothole_diameter = estimate_pothole_diameter(save_path)
 
     return pothole_result, float(pothole_pred), crack_binary_filename, crack_status, total_crack_length, pothole_diameter
-# Preprocess frame for video
-def preprocess_frame(frame):
-    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    l_enhanced = clahe.apply(l)
-    lab_enhanced = cv2.merge((l_enhanced, a, b))
-    enhanced_frame = cv2.cvtColor(lab_enhanced, cv2.COLOR_LAB2BGR)
-    kernel_sharpening = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
-    return cv2.filter2D(enhanced_frame, -1, kernel_sharpening)
 
-# Process video
-def process_video(video_path):
-    cap = cv2.VideoCapture(video_path)
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    interval = int(fps * 3)
-    frame_index = 0
-    results = []
-
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        if frame_index % interval == 0:
-            processed_frame = preprocess_frame(frame)
-            temp_img = Image.fromarray(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB))
-            filename_only = f"frame_{uuid.uuid4().hex}.jpg"
-            temp_path = os.path.join("static", filename_only)
-            pothole_result, conf, crack_filename, crack_status, crack_length, pothole_diameter = process_image(temp_img, save_path=temp_path)
-            sec = round(frame_index / fps) if fps > 0 else frame_index
-            results.append({
-                "time": f"{sec}s",
-                "path": filename_only,
-                "pothole": pothole_result,
-                "confidence": conf,
-                "pothole_diameter": pothole_diameter,
-                "crack_status": crack_status,
-                "crack_length": crack_length
-            })
-        frame_index += 1
-    cap.release()
-    os.remove(video_path)
-    return results
-# Reverse geocode
 def reverse_geocode(lat, lon):
     try:
         url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1"
@@ -149,7 +100,6 @@ def reverse_geocode(lat, lon):
     except:
         return f"{lat},{lon}"
 
-# Load reports
 def load_reports():
     if os.path.exists(REPORTS_FILE):
         try:
@@ -163,7 +113,6 @@ def load_reports():
             return []
     return []
 
-# Save report
 def save_report(image, location, crack_length=0.0, pothole_diameter=0.0):
     if location and "," in location:
         lat, lon = location.split(",")
@@ -193,7 +142,6 @@ def save_report(image, location, crack_length=0.0, pothole_diameter=0.0):
     with open(REPORTS_FILE, "w") as f:
         json.dump(reports, f)
 
-# --- Routes ---
 @app.route("/")
 def home():
     return redirect(url_for("login"))
@@ -205,6 +153,7 @@ def login():
         password = request.form.get("password")
 
         if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
+            session["admin_logged_in"] = True
             return redirect(url_for("admin"))
         else:
             if os.path.exists(USERS_FILE):
@@ -216,21 +165,58 @@ def login():
             else:
                 users = []
 
-            users.append({"email": email, "password": password})
+            for user in users:
+                if user["email"] == email and user["password"] == password:
+                    session["user_logged_in"] = True
+                    return redirect(url_for("index"))
 
-            with open(USERS_FILE, "w") as f:
-                json.dump(users, f, indent=4)
-
-            return redirect(url_for("index"))
+            flash("Invalid Credentials")
+            return redirect(url_for("login"))
 
     return render_template("login.html")
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        name = request.form.get("name")
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        if os.path.exists(USERS_FILE):
+            with open(USERS_FILE, "r") as f:
+                try:
+                    users = json.load(f)
+                except json.JSONDecodeError:
+                    users = []
+        else:
+            users = []
+
+        for user in users:
+            if user["email"] == email:
+                flash("Email already exists")
+                return redirect(url_for("signup"))
+
+        users.append({"name": name, "email": email, "password": password})
+
+        with open(USERS_FILE, "w") as f:
+            json.dump(users, f, indent=4)
+
+        flash("Signup successful. Please login.")
+        return redirect(url_for("login"))
+
+    return render_template("signup.html")
+
 @app.route("/logout")
 def logout():
+    session.clear()
     return redirect(url_for("login"))
-
 
 @app.route("/index", methods=["GET", "POST"])
 def index():
+    if not session.get("user_logged_in"):
+        flash("Please login first.")
+        return redirect(url_for("login"))
+
     result, filename, crack_filename, crack_status, video_result, total_crack_length, pothole_diameter = {}, None, None, None, None, 0.0, 0.0
     if request.method == "POST":
         submit_type = request.form.get("submit_type")
@@ -255,6 +241,10 @@ def index():
 
 @app.route("/admin")
 def admin():
+    if not session.get("admin_logged_in"):
+        flash("Unauthorized access. Please login as Admin.")
+        return redirect(url_for("login"))
+
     reports = load_reports()
     return render_template("admin.html", reports=reports)
 
@@ -266,33 +256,6 @@ def report():
     pothole_diameter = float(request.form.get("pothole_diameter", "0.0"))
     save_report(image, location, crack_length, pothole_diameter)
     return "Reported Successfully"
-
-@app.route("/update_status", methods=["POST"])
-def update_status():
-    report_id = int(request.form.get("id"))
-    action = request.form.get("action")
-    reports = load_reports()
-    for report in reports:
-        if report["id"] == report_id:
-            if action == "close":
-                report["status"] = "in_progress"
-            elif action == "complete":
-                report["status"] = "complete"
-            break
-    with open(REPORTS_FILE, "w") as f:
-        json.dump(reports, f)
-    return render_template("admin.html", reports=reports)
-
-@app.route("/delete_report", methods=["POST"])
-def delete_report():
-    report_id = int(request.form.get("id"))
-    reports = load_reports()
-    reports = [r for r in reports if r["id"] != report_id]
-    for idx, r in enumerate(reports):
-        r["id"] = idx + 1
-    with open(REPORTS_FILE, "w") as f:
-        json.dump(reports, f)
-    return render_template("admin.html", reports=reports)
 
 @app.route("/severe")
 def severe():
