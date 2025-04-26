@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 import numpy as np
@@ -8,6 +8,7 @@ import cv2
 import uuid
 import json
 import requests
+import datetime
 from collections import Counter
 
 app = Flask(__name__)
@@ -151,15 +152,6 @@ def load_reports():
                 if not content:
                     return []
                 reports = json.loads(content)
-            for r in reports:
-                if "status" not in r:
-                    r["status"] = "pending"
-                if "type" not in r:
-                    r["type"] = "pothole"
-                if "crack_length" not in r:
-                    r["crack_length"] = 0.0
-                if "pothole_diameter" not in r:
-                    r["pothole_diameter"] = 0.0
             return reports
         except json.JSONDecodeError:
             return []
@@ -180,6 +172,7 @@ def save_report(image, location, crack_length=0.0, pothole_diameter=0.0):
     reports = load_reports()
     reports.append({
         "id": len(reports) + 1,
+        "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "image": image,
         "location": address,
         "status": "pending",
@@ -222,7 +215,7 @@ def report():
     crack_length = float(request.form.get("crack_length", "0.0"))
     pothole_diameter = float(request.form.get("pothole_diameter", "0.0"))
     save_report(image, location, crack_length, pothole_diameter)
-    return redirect("/admin")
+    return "Reported Successfully"
 
 @app.route("/admin")
 def admin():
@@ -243,7 +236,7 @@ def update_status():
             break
     with open(REPORTS_FILE, "w") as f:
         json.dump(reports, f)
-    return redirect("/admin")
+    return render_template("admin.html", reports=reports)
 
 @app.route("/delete_report", methods=["POST"])
 def delete_report():
@@ -254,7 +247,7 @@ def delete_report():
         r["id"] = idx + 1
     with open(REPORTS_FILE, "w") as f:
         json.dump(reports, f)
-    return redirect("/admin")
+    return render_template("admin.html", reports=reports)
 
 @app.route("/severe")
 def severe():

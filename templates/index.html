@@ -66,7 +66,7 @@
         </div>
 
         {% if result.pothole == "Pothole Detected" or crack_status == "Crack Detected" %}
-        <form action="/report" method="POST">
+        <form id="reportForm">
             <input type="hidden" name="image" value="{{ filename }}">
             <input type="hidden" name="location" class="location-input">
             <input type="hidden" name="crack_length" value="{{ total_crack_length }}">
@@ -98,7 +98,7 @@
                 {% endif %}
 
                 {% if frame.pothole == "Pothole Detected" or frame.crack_status == "Crack Detected" %}
-                <form action="/report" method="POST">
+                <form id="reportForm">
                     <input type="hidden" name="image" value="{{ frame.path }}">
                     <input type="hidden" name="location" class="location-input">
                     <input type="hidden" name="crack_length" value="{{ frame.crack_length }}">
@@ -117,6 +117,27 @@
             const latlng = position.coords.latitude + "," + position.coords.longitude;
             document.querySelectorAll(".location-input").forEach(function(input) {
                 input.value = latlng;
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('form#reportForm').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+
+                    fetch('/report', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.text())
+                    .then(data => {
+                        alert('🛠️ Successfully Reported to Government!');
+                    })
+                    .catch(error => {
+                        alert('Error reporting. Please try again.');
+                    });
+                });
             });
         });
     </script>

@@ -10,17 +10,27 @@
         h2::after { content: ''; display: block; width: 160px; margin: 10px auto 0; height: 3px; background: linear-gradient(to right, transparent, #0077cc, transparent); }
         .card { background-color: #fff; padding: 20px; margin: 20px auto; width: 90%; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
         ul { list-style-type: none; padding: 0; }
-        li { font-size: 18px; padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        li { font-size: 18px; padding: 12px; border-bottom: 1px solid #ddd; text-align: left; display: flex; justify-content: space-between; align-items: center; }
         a { text-decoration: none; color: #0077cc; font-weight: bold; }
         a:hover { text-decoration: underline; }
-        #map { height: 500px; width: 100%; border-radius: 12px; margin-top: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        button {
+        .map-container { display: none; margin-top: 10px; height: 400px; width: 100%; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .toggle-btn {
+            background: linear-gradient(45deg, #0077cc, #3399ff); 
+            color: #fff; padding: 8px 14px; border: none; 
+            font-weight: 600; border-radius: 8px; cursor: pointer; 
+            font-size: 14px;
+        }
+        .toggle-btn:hover {
+            background: linear-gradient(45deg, #005fa3, #2389d7);
+            transform: scale(1.05);
+        }
+        button.back-btn {
+            margin-top: 30px;
             background: linear-gradient(45deg, #0077cc, #3399ff); 
             color: #fff; padding: 10px 20px; border: none; 
-            font-weight: 600; border-radius: 8px; cursor: pointer; 
-            margin-top: 20px;
+            font-weight: 600; border-radius: 8px; cursor: pointer;
         }
-        button:hover {
+        button.back-btn:hover {
             background: linear-gradient(45deg, #005fa3, #2389d7);
             transform: scale(1.05);
         }
@@ -33,12 +43,14 @@
     <div class="card">
         <ul>
             {% for loc in severe_locations %}
-            <li>📍 {{ loc }}</li>
+            <li>
+                <span>📍 {{ loc }}</span>
+                <button class="toggle-btn" onclick="toggleMap('{{ loop.index0 }}', '{{ loc | urlencode }}')">View Map</button>
+            </li>
+            <div id="map-container-{{ loop.index0 }}" class="map-container"></div>
             {% endfor %}
         </ul>
     </div>
-
-    <div id="map"></div>
     {% else %}
     <div class="card">
         <p style="font-size: 20px;">No severe locations detected.</p>
@@ -47,36 +59,49 @@
 
     <div style="margin-top: 30px;">
         <a href="/admin">
-            <button>🔙 Back to Admin Dashboard</button>
+            <button class="back-btn">🔙 Back to Admin Dashboard</button>
         </a>
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-    {% if severe_locations %}
-    var map = L.map('map').setView([20.5937, 78.9629], 5); // Start wide view India
+    var maps = {}; // To track each map instance
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
-        maxZoom: 18,
-    }).addTo(map);
+    function toggleMap(index, location) {
+        var container = document.getElementById('map-container-' + index);
+        var button = container.previousElementSibling.querySelector('.toggle-btn');
 
-    {% for loc in severe_locations %}
-        fetch(`https://nominatim.openstreetmap.org/search?format=json&q={{ loc | urlencode }}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data && data.length > 0) {
-                var latitude = data[0].lat;
-                var longitude = data[0].lon;
-                var marker = L.marker([latitude, longitude]).addTo(map)
-                    .bindPopup(`<b>Severe Location</b><br>{{ loc }}`);
+        if (container.style.display === "none" || container.style.display === "") {
+            container.style.display = "block";
+            button.textContent = "Hide Map";
 
-                // Focus zoom into this location
-                map.setView([latitude, longitude], 13);
+            if (!maps[index]) {
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${location}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        var latitude = parseFloat(data[0].lat);
+                        var longitude = parseFloat(data[0].lon);
+
+                        var map = L.map('map-container-' + index).setView([latitude, longitude], 14);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+                            maxZoom: 18,
+                        }).addTo(map);
+
+                        L.marker([latitude, longitude]).addTo(map)
+                            .bindPopup(`<b>Severe Location</b><br>${decodeURIComponent(location)}`)
+                            .openPopup();
+
+                        maps[index] = map;
+                    }
+                });
             }
-        });
-    {% endfor %}
-    {% endif %}
+        } else {
+            container.style.display = "none";
+            button.textContent = "View Map";
+        }
+    }
     </script>
 </body>
 </html>

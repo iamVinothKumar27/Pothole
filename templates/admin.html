@@ -46,6 +46,7 @@
     <table>
         <tr>
             <th>Report ID</th>
+            <th>Reported Time</th>
             <th>Image</th>
             <th>Location</th>
             <th>Crack Length (m)</th>
@@ -57,6 +58,7 @@
         {% for report in reports %}
         <tr>
             <td>{{ report.id }}</td>
+            <td>{{ report.time if report.time else "-" }}</td>
             <td><img src="{{ url_for('static', filename=report.image) }}"></td>
             <td>{{ report.location }}</td>
             <td>{{ "%.3f"|format(report.crack_length) if report.crack_length else "-" }}</td>
