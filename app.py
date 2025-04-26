@@ -73,6 +73,8 @@ def estimate_pothole_diameter(image_path, pixels_per_meter=1000):
     diameter_meters = diameter_pixels / pixels_per_meter
     return diameter_meters
 
+
+# Process a single image
 def process_image(img_pil, save_path="static/uploaded_image.jpg"):
     img_pil = img_pil.resize((224, 224)).convert("RGB")
     x = image.img_to_array(img_pil)
@@ -88,6 +90,52 @@ def process_image(img_pil, save_path="static/uploaded_image.jpg"):
         pothole_diameter = estimate_pothole_diameter(save_path)
 
     return pothole_result, float(pothole_pred), crack_binary_filename, crack_status, total_crack_length, pothole_diameter
+
+# Preprocess frame for video
+def preprocess_frame(frame):
+    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    l_enhanced = clahe.apply(l)
+    lab_enhanced = cv2.merge((l_enhanced, a, b))
+    enhanced_frame = cv2.cvtColor(lab_enhanced, cv2.COLOR_LAB2BGR)
+    kernel_sharpening = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+    return cv2.filter2D(enhanced_frame, -1, kernel_sharpening)
+
+# Process video
+def process_video(video_path):
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    interval = int(fps * 3)
+    frame_index = 0
+    results = []
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if frame_index % interval == 0:
+            processed_frame = preprocess_frame(frame)
+            temp_img = Image.fromarray(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB))
+            filename_only = f"frame_{uuid.uuid4().hex}.jpg"
+            temp_path = os.path.join("static", filename_only)
+            pothole_result, conf, crack_filename, crack_status, crack_length, pothole_diameter = process_image(temp_img, save_path=temp_path)
+            sec = round(frame_index / fps) if fps > 0 else frame_index
+            results.append({
+                "time": f"{sec}s",
+                "path": filename_only,
+                "pothole": pothole_result,
+                "confidence": conf,
+                "pothole_diameter": pothole_diameter,
+                "crack_status": crack_status,
+                "crack_length": crack_length
+            })
+        frame_index += 1
+    cap.release()
+    os.remove(video_path)
+    return results
+
+
 
 def reverse_geocode(lat, lon):
     try:
