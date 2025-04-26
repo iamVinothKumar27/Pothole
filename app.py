@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for, flash
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 import numpy as np
@@ -13,8 +13,15 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
+app.secret_key = 'supersecretkey'  # Needed for flashing messages
+
 TFLITE_MODEL_PATH = "Pothole.tflite"
 REPORTS_FILE = "reports.json"
+USERS_FILE = "users.json"
+
+# --- Admin Credentials ---
+ADMIN_EMAIL = "admin@gmail.com"
+ADMIN_PASSWORD = "admin123"
 
 # Load TFLite model
 def load_tflite_interpreter():
@@ -87,7 +94,6 @@ def process_image(img_pil, save_path="static/uploaded_image.jpg"):
         pothole_diameter = estimate_pothole_diameter(save_path)
 
     return pothole_result, float(pothole_pred), crack_binary_filename, crack_status, total_crack_length, pothole_diameter
-
 # Preprocess frame for video
 def preprocess_frame(frame):
     lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
@@ -131,7 +137,6 @@ def process_video(video_path):
     cap.release()
     os.remove(video_path)
     return results
-
 # Reverse geocode
 def reverse_geocode(lat, lon):
     try:
@@ -188,8 +193,43 @@ def save_report(image, location, crack_length=0.0, pothole_diameter=0.0):
     with open(REPORTS_FILE, "w") as f:
         json.dump(reports, f)
 
-# Routes
-@app.route("/", methods=["GET", "POST"])
+# --- Routes ---
+@app.route("/")
+def home():
+    return redirect(url_for("login"))
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
+            return redirect(url_for("admin"))
+        else:
+            if os.path.exists(USERS_FILE):
+                with open(USERS_FILE, "r") as f:
+                    try:
+                        users = json.load(f)
+                    except json.JSONDecodeError:
+                        users = []
+            else:
+                users = []
+
+            users.append({"email": email, "password": password})
+
+            with open(USERS_FILE, "w") as f:
+                json.dump(users, f, indent=4)
+
+            return redirect(url_for("index"))
+
+    return render_template("login.html")
+@app.route("/logout")
+def logout():
+    return redirect(url_for("login"))
+
+
+@app.route("/index", methods=["GET", "POST"])
 def index():
     result, filename, crack_filename, crack_status, video_result, total_crack_length, pothole_diameter = {}, None, None, None, None, 0.0, 0.0
     if request.method == "POST":
@@ -213,6 +253,11 @@ def index():
                            video_result=video_result, total_crack_length=total_crack_length,
                            pothole_diameter=pothole_diameter)
 
+@app.route("/admin")
+def admin():
+    reports = load_reports()
+    return render_template("admin.html", reports=reports)
+
 @app.route("/report", methods=["POST"])
 def report():
     image = request.form.get("image")
@@ -221,11 +266,6 @@ def report():
     pothole_diameter = float(request.form.get("pothole_diameter", "0.0"))
     save_report(image, location, crack_length, pothole_diameter)
     return "Reported Successfully"
-
-@app.route("/admin")
-def admin():
-    reports = load_reports()
-    return render_template("admin.html", reports=reports)
 
 @app.route("/update_status", methods=["POST"])
 def update_status():

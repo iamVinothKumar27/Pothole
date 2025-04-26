@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Severe Locations</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="icon" href="{{ url_for('static', filename='logo1.webp') }}">
     <style>
         body { background-color: #f9f9f9; font-family: 'Inter', sans-serif; color: #333; text-align: center; padding: 20px; }
         h2 { color: #0077cc; font-size: 32px; margin-bottom: 10px; }
@@ -37,6 +38,11 @@
     </style>
 </head>
 <body>
+    <div style="position: absolute; top: 20px; right: 20px;">
+        <a href="{{ url_for('logout') }}">
+            <button style="background: linear-gradient(45deg, #ff4e50, #f9d423); color: white; padding: 8px 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Logout</button>
+        </a>
+    </div>
     <h2>⚠️ Severe Locations (More than 5 Reports)</h2>
 
     {% if severe_locations %}

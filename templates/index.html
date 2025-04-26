@@ -17,6 +17,11 @@
     </style>
 </head>
 <body>
+    <div style="position: absolute; top: 20px; right: 20px;">
+        <a href="{{ url_for('logout') }}">
+            <button style="background: linear-gradient(45deg, #ff4e50, #f9d423); color: white; padding: 8px 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Logout</button>
+        </a>
+    </div>
     <h2>🚧 Road Defect Detection System</h2>
 
     <div class="form-section">
@@ -53,6 +58,15 @@
             <div class="grid-item">
                 <h4>Original Image</h4>
                 <img src="{{ url_for('static', filename=filename) }}">
+                {% if result.pothole == "Pothole Detected"  %}
+                <form id="reportForm">
+                    <input type="hidden" name="image" value="{{ filename }}">
+                    <input type="hidden" name="location" class="location-input">
+                    <input type="hidden" name="crack_length" value="{{ total_crack_length }}">
+                    <input type="hidden" name="pothole_diameter" value="{{ pothole_diameter }}">
+                    <button type="submit">📨 Report Image to Gov</button>
+                </form>
+        {% endif %}
             </div>
             {% endif %}
             {% if crack_filename %}
@@ -65,15 +79,7 @@
             {% endif %}
         </div>
 
-        {% if result.pothole == "Pothole Detected" or crack_status == "Crack Detected" %}
-        <form id="reportForm">
-            <input type="hidden" name="image" value="{{ filename }}">
-            <input type="hidden" name="location" class="location-input">
-            <input type="hidden" name="crack_length" value="{{ total_crack_length }}">
-            <input type="hidden" name="pothole_diameter" value="{{ pothole_diameter }}">
-            <button type="submit">📨 Report Image to Gov</button>
-        </form>
-        {% endif %}
+        
     </div>
     {% endif %}
 
@@ -97,7 +103,7 @@
                 <p><strong>Crack Length:</strong> {{ "%.3f"|format(frame.crack_length) }} meters</p>
                 {% endif %}
 
-                {% if frame.pothole == "Pothole Detected" or frame.crack_status == "Crack Detected" %}
+                {% if frame.pothole == "Pothole Detected" %}
                 <form id="reportForm">
                     <input type="hidden" name="image" value="{{ frame.path }}">
                     <input type="hidden" name="location" class="location-input">
